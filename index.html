@@ -225,6 +225,24 @@ const OFFICE_TASKS_SJ = [
     chaos:["Overzicht lopende projecten bewaken","Facturatie op tijd","Nieuwe klanten pipeline"] },
 ];
 
+const OFFICE_CH_TASKS = [
+  {type:"Factuur versturen", note:"Maandelijkse facturen controleren en versturen naar alle actieve klanten", dueDate:"2026-05-31"},
+  {type:"Betaling controleren", note:"Openstaande facturen checken en opvolgen", dueDate:"2026-05-31"},
+  {type:"Urenregistratie bijwerken", note:"Uren per klant bijwerken en controleren op afwijkingen", dueDate:"2026-05-31"},
+  {type:"Offerte maken", note:"Openstaande offerteaanvragen uitwerken en versturen", dueDate:"2026-05-28"},
+  {type:"Contract opstellen", note:"Nieuwe contracten opmaken voor nieuwe klanten", dueDate:"2026-05-28"},
+  {type:"Contract opvolgen", note:"Lopende contracten checken op verloopdatum", dueDate:"2026-05-28"},
+  {type:"BTW-aangifte voorbereiden", note:"Kwartaalcijfers verzamelen en klaarzetten voor boekhouder", dueDate:"2026-06-30"},
+  {type:"Kwartaaloverzicht maken", note:"Omzet, kosten en marge per klant in kaart brengen", dueDate:"2026-06-30"},
+  {type:"Nieuwe klant onboarden", note:"Onboardingdocument invullen, toegang regelen, kick-off inplannen", dueDate:"2026-05-28"},
+  {type:"Acquisitie opvolgen", note:"Leads en prospects opvolgen die nog geen ja hebben gegeven", dueDate:"2026-05-28"},
+  {type:"Evaluatie inplannen", note:"Kwartaalevaluaties inplannen met actieve klanten", dueDate:"2026-06-07"},
+  {type:"Werkoverleg plannen", note:"Maandelijks teamoverleg Fenna en Lisette inplannen", dueDate:"2026-06-01"},
+  {type:"Tool of abonnement regelen", note:"Abonnementen en tools controleren op kosten en gebruik", dueDate:"2026-06-01"},
+  {type:"Wachtwoord of toegang regelen", note:"Toegangen en wachtwoorden up to date houden voor team", dueDate:"2026-06-01"},
+  {type:"Rapportage maken", note:"Maandelijkse contentrapportage per klant opstellen", dueDate:"2026-05-31"},
+];
+
 const IKVZ_TASKS = [
   {type:"Landingspagina",note:"Live-check: CTA, reviews, vergelijkingstabel en afrekenpad testen",dueDate:"2026-05-25"},
   {type:"E-mailsequentie schrijven",note:"Welkomstmail: warm, enthousiast, met directe toegangslink cursus",dueDate:"2026-05-25"},
@@ -293,6 +311,9 @@ function App() {
   const [loadingFunnel, setLoadingFunnel] = React.useState(false);
   const [bonaparteLoaded, setBonaparteLoaded] = React.useState(false);
   const [loadingBonaparte, setLoadingBonaparte] = React.useState(false);
+  const [officeLoaded, setOfficeLoaded] = React.useState(false);
+  const [loadingOffice, setLoadingOffice] = React.useState(false);
+  const [officeCount, setOfficeCount] = React.useState(0);
   const [funnelCount, setFunnelCount] = React.useState(0);
   const [bonaparteCount, setBonaparteCount] = React.useState(0);
 
@@ -350,6 +371,34 @@ function App() {
     setLoadingBonaparte(false);
     if (count > 0) { setBonaparteLoaded(true); showToast(count + ' rebranding taken aangemaakt!'); }
     else { showToast('Geen taken aangemaakt — check console voor fout'); }
+  }
+
+  async function loadOfficeTasks() {
+    setLoadingOffice(true);
+    setOfficeLoaded(false);
+    let count = 0;
+    for (const t of OFFICE_CH_TASKS) {
+      try {
+        await createTask({
+          Name: t.type,
+          Klant: 'Het Contenthuis — Office',
+          Taak: t.type,
+          Notitie: t.note,
+          Assignee: 'Fenna',
+          Status: 'Open',
+          Deadline: t.dueDate,
+          Bedrijf: 'Contenthuis',
+        });
+        count++;
+        setOfficeCount(count);
+      } catch(e) {
+        showToast('Fout bij taak ' + count + ': ' + e.message);
+      }
+    }
+    await fetchRecords();
+    setLoadingOffice(false);
+    if (count > 0) { setOfficeLoaded(true); showToast(count + ' office taken aangemaakt!'); }
+    else { showToast('Geen taken aangemaakt'); }
   }
 
   const co = COMPANIES[company];
@@ -634,6 +683,12 @@ function App() {
             disabled: loadingFunnel,
             style:{background:funnelLoaded?'#e8f5e9':'#1565C0',color:funnelLoaded?'#2e7d32':'#fff',border:'none',borderRadius:10,padding:'10px 18px',fontSize:13,fontWeight:500,whiteSpace:'nowrap',opacity:loadingFunnel?0.7:1}},
             loadingFunnel ? ('Aanmaken ' + funnelCount + '/24...') : funnelLoaded ? ('Opnieuw laden (' + funnelCount + ' aangemaakt)') : 'Laad funneltaken (24)'
+          ) : null,
+          activeClient.id==='office_ch' ? React.createElement('button', {
+            onClick: loadOfficeTasks,
+            disabled: loadingOffice,
+            style:{background:officeLoaded?'#e8f5e9':'#1a1a1a',color:officeLoaded?'#2e7d32':'#fff',border:'none',borderRadius:10,padding:'10px 18px',fontSize:13,fontWeight:500,whiteSpace:'nowrap',opacity:loadingOffice?0.7:1}},
+            loadingOffice ? ('Aanmaken ' + officeCount + '/15...') : officeLoaded ? ('Opnieuw laden (' + officeCount + ' aangemaakt)') : 'Laad office taken (15)'
           ) : null,
           activeClient.id==='bonaparte' ? React.createElement('button', {
             onClick: loadBonaparteTasks,
