@@ -209,6 +209,22 @@ async function deleteLinkAt(id) {
 
 const TASK_TYPES = ["Contentkalender maken","Shoot plannen","Moderatie/review","Captions schrijven","Reels editten","Campagne uitwerken","Strategie call","Ads live zetten","Stories plannen","Contentdag organiseren","Loomly invoeren","Nieuw format bedenken","Landingspagina","Winactie uitwerken","Open dag plannen","E-mailsequentie schrijven","Leadmagneet maken","UGC creator briefen","SEO-blogstrategie","Adverteerder briefen","Meta Pixel instellen","Retargetingcampagne","Referral-systeem opzetten"];
 
+const OFFICE_TASKS_CH = [
+  { id:"office_ch", name:"Het Contenthuis — Office", contact:"", platform:"Intern", assignee:"Fenna", color:"#F5F5F5", accent:"#1a1a1a",
+    monthly:["Facturatie","Projectplanning","Teamoverleg","Acquisitie"],
+    tov:"Intern gebruik — geen tone of voice van toepassing.",
+    running:["Kwartaalplanning","Offerte-opvolging","Teamoverleg maandelijks"],
+    chaos:["Overzicht lopende projecten bewaken","Facturatie op tijd","Nieuwe klanten pipeline"] },
+];
+
+const OFFICE_TASKS_SJ = [
+  { id:"office_sj", name:"Sjraar — Office", contact:"", platform:"Intern", assignee:"Fenna", color:"#FBE9E7", accent:"#D44820",
+    monthly:["Facturatie","Projectplanning","Teamoverleg","Acquisitie"],
+    tov:"Intern gebruik — geen tone of voice van toepassing.",
+    running:["Kwartaalplanning","Offerte-opvolging","Teamoverleg maandelijks"],
+    chaos:["Overzicht lopende projecten bewaken","Facturatie op tijd","Nieuwe klanten pipeline"] },
+];
+
 const IKVZ_TASKS = [
   {type:"Landingspagina",note:"Live-check: CTA, reviews, vergelijkingstabel en afrekenpad testen",dueDate:"2026-05-25"},
   {type:"E-mailsequentie schrijven",note:"Welkomstmail: warm, enthousiast, met directe toegangslink cursus",dueDate:"2026-05-25"},
@@ -266,6 +282,9 @@ function App() {
   const [adminPinError, setAdminPinError] = useState(false);
   const [adminNotes, setAdminNotes] = useState({});
   const [adminSaving, setAdminSaving] = useState(false);
+  const [adminWie, setAdminWie] = useState('Fenna');
+  const [adminTab, setAdminTab] = useState('klanten');
+  const [werknemerTaken, setWerknemerTaken] = useState({Fenna:{},Lisette:{}});
   const [links, setLinks] = useState([]);
   const [newLink, setNewLink] = useState({categorie:'Google Drive', url:''});
   const [loadingLinks, setLoadingLinks] = useState(false);
@@ -274,11 +293,15 @@ function App() {
   const [loadingFunnel, setLoadingFunnel] = React.useState(false);
   const [bonaparteLoaded, setBonaparteLoaded] = React.useState(false);
   const [loadingBonaparte, setLoadingBonaparte] = React.useState(false);
+  const [funnelCount, setFunnelCount] = React.useState(0);
+  const [bonaparteCount, setBonaparteCount] = React.useState(0);
 
   async function loadIkvzFunnelTasks() {
     setLoadingFunnel(true);
-    try {
-      for (const t of IKVZ_TASKS) {
+    setFunnelLoaded(false);
+    let count = 0;
+    for (const t of IKVZ_TASKS) {
+      try {
         await createTask({
           Name: t.type,
           Klant: 'Ikverkoopzelf.nl',
@@ -289,24 +312,27 @@ function App() {
           Deadline: t.dueDate,
           Bedrijf: 'Contenthuis',
         });
+        count++;
+        setFunnelCount(count);
+      } catch(e) {
+        showToast('Fout bij taak ' + count + ': ' + e.message);
       }
-      await fetchRecords();
-      setFunnelLoaded(true);
-      showToast('24 funneltaken aangemaakt!');
-    } catch(e) {
-      showToast('Opslaan mislukt: ' + e.message);
-    } finally {
-      setLoadingFunnel(false);
     }
+    await fetchRecords();
+    setLoadingFunnel(false);
+    if (count > 0) { setFunnelLoaded(true); showToast(count + ' van 24 funneltaken aangemaakt!'); }
+    else { showToast('Geen taken aangemaakt — check console voor fout'); }
   }
 
   async function loadBonaparteTasks() {
     setLoadingBonaparte(true);
-    try {
-      for (const t of BONAPARTE_TASKS) {
+    setBonaparteLoaded(false);
+    let count = 0;
+    for (const t of BONAPARTE_TASKS) {
+      try {
         await createTask({
           Name: t.type,
-          Klant: 'Grand Cafe Bonaparte',
+          Klant: 'Grand Café Bonaparte',
           Taak: t.type,
           Notitie: t.note,
           Assignee: 'Fenna',
@@ -314,19 +340,20 @@ function App() {
           Deadline: t.dueDate,
           Bedrijf: 'Contenthuis',
         });
+        count++;
+        setBonaparteCount(count);
+      } catch(e) {
+        showToast('Fout bij taak ' + count + ': ' + e.message);
       }
-      await fetchRecords();
-      setBonaparteLoaded(true);
-      showToast('Rebranding taken aangemaakt voor Bonaparte!');
-    } catch(e) {
-      showToast('Opslaan mislukt: ' + e.message);
-    } finally {
-      setLoadingBonaparte(false);
     }
+    await fetchRecords();
+    setLoadingBonaparte(false);
+    if (count > 0) { setBonaparteLoaded(true); showToast(count + ' rebranding taken aangemaakt!'); }
+    else { showToast('Geen taken aangemaakt — check console voor fout'); }
   }
 
   const co = COMPANIES[company];
-  const clients = company==='contenthuis' ? CLIENTS_CH : CLIENTS_SJ;
+  const clients = company==='contenthuis' ? [...CLIENTS_CH, ...OFFICE_TASKS_CH] : [...CLIENTS_SJ, ...OFFICE_TASKS_SJ];
   const headerBg = company==='contenthuis'?'#1a1a1a':'#D44820';
 
   function showToast(msg) { setToast(msg); setTimeout(()=>setToast(''),3500); }
@@ -453,7 +480,7 @@ function App() {
 
   function switchCompany(c) { setCompany(c); setView('dashboard'); setActiveClient(null); setFilter('Alle'); setSearch(''); }
 
-  const assignees = ['Alle','Fenna','Glenni'];
+  const assignees = ['Alle','Fenna','Glenni','Lisette'];
   const filtered = clients.filter(c=>(filter==='Alle'||c.assignee===filter)&&(search===''||c.name.toLowerCase().includes(search.toLowerCase())));
 
   // All open tasks across current company's clients
@@ -604,15 +631,15 @@ function App() {
           ),
           activeClient.id==='ikverkoopzelf' ? React.createElement('button', {
             onClick: loadIkvzFunnelTasks,
-            disabled: loadingFunnel||funnelLoaded,
+            disabled: loadingFunnel,
             style:{background:funnelLoaded?'#e8f5e9':'#1565C0',color:funnelLoaded?'#2e7d32':'#fff',border:'none',borderRadius:10,padding:'10px 18px',fontSize:13,fontWeight:500,whiteSpace:'nowrap',opacity:loadingFunnel?0.7:1}},
-            loadingFunnel ? 'Aanmaken...' : funnelLoaded ? 'Taken geladen' : 'Laad funneltaken (24)'
+            loadingFunnel ? ('Aanmaken ' + funnelCount + '/24...') : funnelLoaded ? ('Opnieuw laden (' + funnelCount + ' aangemaakt)') : 'Laad funneltaken (24)'
           ) : null,
           activeClient.id==='bonaparte' ? React.createElement('button', {
             onClick: loadBonaparteTasks,
-            disabled: loadingBonaparte||bonaparteLoaded,
+            disabled: loadingBonaparte,
             style:{background:bonaparteLoaded?'#e8f5e9':'#6A1B9A',color:bonaparteLoaded?'#2e7d32':'#fff',border:'none',borderRadius:10,padding:'10px 18px',fontSize:13,fontWeight:500,whiteSpace:'nowrap',opacity:loadingBonaparte?0.7:1}},
-            loadingBonaparte ? 'Aanmaken...' : bonaparteLoaded ? 'Taken geladen' : 'Laad rebranding taken (3)'
+            loadingBonaparte ? ('Aanmaken ' + bonaparteCount + '/3...') : bonaparteLoaded ? ('Opnieuw laden (' + bonaparteCount + ' aangemaakt)') : 'Laad rebranding taken (3)'
           ) : null
         ),
 
@@ -637,7 +664,7 @@ function App() {
               React.createElement('div', null,
                 React.createElement('label', {style:S.label}, 'Voor wie'),
                 React.createElement('select', {style:S.select,value:newTask.assignee,onChange:e=>setNewTask(p=>({...p,assignee:e.target.value}))},
-                  React.createElement('option',null,'Fenna'), React.createElement('option',null,'Glenni')
+                  React.createElement('option',null,'Fenna'), React.createElement('option',null,'Glenni'), React.createElement('option',null,'Lisette')
                 )
               )
             ),
@@ -787,9 +814,17 @@ function App() {
 
       // ADMIN DASHBOARD
       view==='admin' && showAdmin && React.createElement('div', null,
-        React.createElement('div', {style:{fontFamily:"'DM Serif Display',serif",fontSize:22,marginBottom:6}}, 'Admin'),
-        React.createElement('div', {style:{fontSize:13,color:'#888',marginBottom:24}}, 'Alleen zichtbaar voor Fenna & Lisette'),
-        React.createElement('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:12}},
+        React.createElement('div', {style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:12}},
+          React.createElement('div', {style:{fontFamily:"'DM Serif Display',serif",fontSize:22}}, 'Admin'),
+          React.createElement('div', {style:{display:'flex',gap:4,background:'#f0f0f0',padding:4,borderRadius:10}},
+            ['klanten','werknemers'].map(t=>React.createElement('button', {key:t,onClick:()=>setAdminTab(t),
+              style:{background:adminTab===t?'#fff':'transparent',border:'none',borderRadius:8,padding:'7px 16px',fontSize:13,fontWeight:adminTab===t?600:400,color:adminTab===t?'#1a1a1a':'#777'}},
+              t==='klanten'?'Klanten':'Werknemers'
+            ))
+          )
+        ),
+
+        adminTab==='klanten' && React.createElement('div', {style:{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:12}},
           [...CLIENTS_CH,...CLIENTS_SJ].map(client=>{
             const clientAdminNotes = (adminNotes[client.name]||{});
             return React.createElement('div', {key:client.id,style:{background:'#fff',borderRadius:14,padding:20,border:'1px solid #f0f0f0'}},
@@ -812,15 +847,43 @@ function App() {
               React.createElement('button', {
                 onClick:async()=>{
                   setAdminSaving(true);
-                  try {
-                    const note = adminNotes[client.name]||{};
-                    showToast('✓ Opgeslagen voor '+client.name);
-                  } finally { setAdminSaving(false); }
+                  try { showToast('Opgeslagen voor '+client.name); }
+                  finally { setAdminSaving(false); }
                 },
                 style:{background:'#1a1a1a',color:'#fff',border:'none',borderRadius:8,padding:'8px 16px',fontSize:12,fontWeight:600,width:'100%'}
               }, adminSaving?'Opslaan...':'Opslaan')
             );
           })
+        ),
+
+        adminTab==='werknemers' && React.createElement('div', null,
+          React.createElement('div', {style:{display:'flex',gap:4,background:'#f0f0f0',padding:4,borderRadius:10,width:'fit-content',marginBottom:20}},
+            ['Fenna','Lisette'].map(naam=>React.createElement('button', {key:naam,onClick:()=>setAdminWie(naam),
+              style:{background:adminWie===naam?'#fff':'transparent',border:'none',borderRadius:8,padding:'7px 20px',fontSize:13,fontWeight:adminWie===naam?600:400,color:adminWie===naam?'#1a1a1a':'#777'}},
+              naam
+            ))
+          ),
+          React.createElement('div', {style:{maxWidth:560}},
+            React.createElement('div', {style:{background:'#fff',borderRadius:14,padding:20,border:'1px solid #f0f0f0'}},
+              React.createElement('div', {style:{fontWeight:600,fontSize:14,marginBottom:14}}, adminWie+' — Notities'),
+              ['Focus deze week','Lopende projecten','Aandachtspunten','Verlof / afwezig','Overige notities'].map(veld=>
+                React.createElement('div', {key:veld,style:{marginBottom:12}},
+                  React.createElement('label', {style:{fontSize:11,color:'#aaa',display:'block',marginBottom:3}}, veld),
+                  React.createElement('textarea', {
+                    rows:3,
+                    style:{width:'100%',padding:'8px',borderRadius:6,border:'1px solid #e0e0e0',fontSize:12,resize:'vertical',boxSizing:'border-box',fontFamily:'inherit'},
+                    value:((werknemerTaken[adminWie]||{})[veld]||''),
+                    onChange:e=>setWerknemerTaken(p=>({...p,[adminWie]:{...(p[adminWie]||{}),[veld]:e.target.value}})),
+                    placeholder:veld+'...'
+                  })
+                )
+              ),
+              React.createElement('button', {
+                onClick:()=>showToast('Opgeslagen voor '+adminWie),
+                style:{background:'#1a1a1a',color:'#fff',border:'none',borderRadius:8,padding:'8px 16px',fontSize:12,fontWeight:600,width:'100%'}
+              }, 'Opslaan')
+            )
+          )
         )
       )
     )
